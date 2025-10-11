@@ -35,6 +35,14 @@ Help users manage their monthly budget by:
   - Ability to view and manage commitments for any month/year
   - Historical view indicator when viewing past months
   - Commitments correctly assigned to selected month/year
+- **Enhanced Auto-Payment Feature**:
+  - "Done So Far" field automatically disabled when auto-payment is enabled
+  - Smart payment tracking based on due date:
+    - Past months: Auto-payments marked as fully paid
+    - Current month: Marked as paid only if current day >= due day
+    - Future months: Not yet paid (counted in balance)
+  - Accurate totals calculation considering auto-payment status
+  - Form shows helpful message explaining auto-payment behavior
 - Comprehensive E2E testing completed successfully for all features
 
 ## Project Architecture
