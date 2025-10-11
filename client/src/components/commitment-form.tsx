@@ -49,9 +49,12 @@ export function CommitmentForm({ commitment, month, year, onSubmit, onCancel }: 
     },
   });
 
+  const isAutomated = form.watch("isAutomated");
+
   const handleSubmit = (values: z.infer<typeof formSchema>) => {
     const monthlyCommitment = values.monthlyCommitment;
-    const doneSoFar = values.doneSoFar;
+    // For auto-payment, doneSoFar is always 0 (will be calculated based on due day)
+    const doneSoFar = values.isAutomated ? 0 : values.doneSoFar;
     const balance = monthlyCommitment - doneSoFar;
     
     onSubmit({
@@ -139,11 +142,18 @@ export function CommitmentForm({ commitment, month, year, onSubmit, onCancel }: 
                 <Input 
                   type="number" 
                   placeholder="0" 
-                  {...field} 
+                  {...field}
+                  disabled={isAutomated}
                   data-testid="input-done-so-far"
                 />
               </FormControl>
-              <FormMessage />
+              {isAutomated ? (
+                <p className="text-sm text-muted-foreground">
+                  Auto-payment will be marked as paid on the due day
+                </p>
+              ) : (
+                <FormMessage />
+              )}
             </FormItem>
           )}
         />

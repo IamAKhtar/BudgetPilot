@@ -26,6 +26,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { getEffectiveDoneSoFar } from "@/lib/auto-payment-utils";
 import type { Commitment, InsertCommitment } from "@shared/schema";
 
 export default function Dashboard() {
@@ -92,9 +93,10 @@ export default function Dashboard() {
     },
   });
 
-  const totalBalance = commitments.reduce((sum, c) => sum + c.balance, 0);
+  // Calculate totals using effective doneSoFar for auto-payments
   const totalMonthly = commitments.reduce((sum, c) => sum + c.monthlyCommitment, 0);
-  const totalPaid = commitments.reduce((sum, c) => sum + c.doneSoFar, 0);
+  const totalPaid = commitments.reduce((sum, c) => sum + getEffectiveDoneSoFar(c, selectedMonth, selectedYear), 0);
+  const totalBalance = totalMonthly - totalPaid;
   const surplusShortfall = bankBalance.balance - totalBalance;
   const isSurplus = surplusShortfall >= 0;
 
@@ -319,6 +321,8 @@ export default function Dashboard() {
                 <CommitmentCard
                   key={commitment.id}
                   commitment={commitment}
+                  selectedMonth={selectedMonth}
+                  selectedYear={selectedYear}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
                 />

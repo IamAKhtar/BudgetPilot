@@ -2,17 +2,22 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2, Calendar, CreditCard } from "lucide-react";
+import { getEffectiveDoneSoFar, getEffectiveBalance } from "@/lib/auto-payment-utils";
 import type { Commitment } from "@shared/schema";
 
 interface CommitmentCardProps {
   commitment: Commitment;
+  selectedMonth: number;
+  selectedYear: number;
   onEdit: (commitment: Commitment) => void;
   onDelete: (id: string) => void;
 }
 
-export function CommitmentCard({ commitment, onEdit, onDelete }: CommitmentCardProps) {
-  const isFullyPaid = commitment.balance === 0;
-  const isPaid = commitment.doneSoFar > 0;
+export function CommitmentCard({ commitment, selectedMonth, selectedYear, onEdit, onDelete }: CommitmentCardProps) {
+  const effectiveDoneSoFar = getEffectiveDoneSoFar(commitment, selectedMonth, selectedYear);
+  const effectiveBalance = getEffectiveBalance(commitment, selectedMonth, selectedYear);
+  const isFullyPaid = effectiveBalance === 0;
+  const isPaid = effectiveDoneSoFar > 0;
 
   return (
     <Card 
@@ -58,16 +63,16 @@ export function CommitmentCard({ commitment, onEdit, onDelete }: CommitmentCardP
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Paid</span>
                 <span className="font-mono text-success" data-testid={`text-done-${commitment.id}`}>
-                  ₹{commitment.doneSoFar.toLocaleString()}
+                  ₹{effectiveDoneSoFar.toLocaleString()}
                 </span>
               </div>
             )}
             
-            {commitment.balance > 0 && (
+            {effectiveBalance > 0 && (
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Balance</span>
                 <span className="font-mono font-semibold text-destructive" data-testid={`text-balance-${commitment.id}`}>
-                  ₹{commitment.balance.toLocaleString()}
+                  ₹{effectiveBalance.toLocaleString()}
                 </span>
               </div>
             )}
