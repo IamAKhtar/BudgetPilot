@@ -68,6 +68,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Copy commitments from previous month
+  app.post("/api/commitments/copy-from-previous", async (req, res) => {
+    try {
+      const { month, year } = req.body;
+      
+      if (!month || !year) {
+        return res.status(400).json({ error: "Month and year are required" });
+      }
+
+      // Calculate previous month
+      let prevMonth = month - 1;
+      let prevYear = year;
+      if (prevMonth < 1) {
+        prevMonth = 12;
+        prevYear = year - 1;
+      }
+
+      // Get commitments from previous month
+      const previousCommitments = await storage.getCommitments(prevMonth, prevYear);
+      
+      if (previousCommitments.length === 0) {
+        return res.status(404).json({ error: "No commitments found in previous month" });
+      }
+
+      // Copy commitments to new month with doneSoFar = 0
+      const copiedCommitments = await Promise.all(
+        previousCommitments.map(commitment =>
+          storage.createCommitment({
+            type: commitment.type,
+            name: commitment.name,
+            monthlyCommitment: commitment.monthlyCommitment,
+            doneSoFar: 0,
+            balance: commitment.monthlyCommitment,
+            dueDay: commitment.dueDay,
+            isAutomated: commitment.isAutomated,
+            month,
+            year,
+          })
+        )
+      );
+
+      res.status(201).json(copiedCommitments);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to copy commitments" });
+    }
+  });
+
   // Get bank balance
   app.get("/api/bank-balance", async (req, res) => {
     try {

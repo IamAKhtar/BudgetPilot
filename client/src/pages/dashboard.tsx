@@ -93,6 +93,22 @@ export default function Dashboard() {
     },
   });
 
+  const copyFromPreviousMonthMutation = useMutation({
+    mutationFn: ({ month, year }: { month: number; year: number }) =>
+      apiRequest("POST", "/api/commitments/copy-from-previous", { month, year }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/commitments', selectedMonth, selectedYear] });
+      toast({ title: "Commitments copied from previous month" });
+    },
+    onError: () => {
+      toast({ 
+        title: "Could not copy commitments",
+        description: "No commitments found in previous month",
+        variant: "destructive"
+      });
+    },
+  });
+
   // Calculate totals using effective doneSoFar for auto-payments
   const totalMonthly = commitments.reduce((sum, c) => sum + c.monthlyCommitment, 0);
   const totalPaid = commitments.reduce((sum, c) => sum + getEffectiveDoneSoFar(c, selectedMonth, selectedYear), 0);
@@ -130,6 +146,10 @@ export default function Dashboard() {
   const handleAddNew = () => {
     setEditingCommitment(null);
     setIsFormOpen(true);
+  };
+
+  const handleCopyFromPrevious = () => {
+    copyFromPreviousMonthMutation.mutate({ month: selectedMonth, year: selectedYear });
   };
 
   const handlePreviousMonth = () => {
@@ -305,14 +325,33 @@ export default function Dashboard() {
             </div>
           ) : commitments.length === 0 ? (
             <Card className="p-12">
-              <div className="text-center">
-                <p className="text-muted-foreground mb-4">
-                  No commitments yet. Add your first one to get started!
-                </p>
-                <Button onClick={handleAddNew} data-testid="button-add-first">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Commitment
-                </Button>
+              <div className="text-center space-y-6">
+                <div>
+                  <p className="text-muted-foreground mb-2">
+                    No commitments for this month yet.
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Copy from last month or add manually
+                  </p>
+                </div>
+                <div className="flex gap-3 justify-center flex-wrap">
+                  <Button 
+                    onClick={handleCopyFromPrevious}
+                    variant="default"
+                    disabled={copyFromPreviousMonthMutation.isPending}
+                    data-testid="button-copy-previous"
+                  >
+                    {copyFromPreviousMonthMutation.isPending ? "Copying..." : "Copy from Previous Month"}
+                  </Button>
+                  <Button 
+                    onClick={handleAddNew}
+                    variant="outline"
+                    data-testid="button-add-first"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Manually
+                  </Button>
+                </div>
               </div>
             </Card>
           ) : (
