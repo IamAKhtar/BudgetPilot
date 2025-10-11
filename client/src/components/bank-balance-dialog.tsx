@@ -59,8 +59,9 @@ export function BankBalanceDialog({
     }
   }, [open, currentBalance, form]);
 
-  const handleSubmit = (data: z.output<typeof formSchema>) => {
-    onSubmit(data.balance, data.reason);
+  const handleSubmit = (values: FormValues) => {
+    const parsed = formSchema.parse(values);
+    onSubmit(parsed.balance, parsed.reason);
     form.reset();
     onOpenChange(false);
   };

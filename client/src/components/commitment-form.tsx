@@ -49,14 +49,20 @@ export function CommitmentForm({ commitment, onSubmit, onCancel }: CommitmentFor
     },
   });
 
-  const handleSubmit = (data: z.output<typeof formSchema>) => {
-    const monthlyCommitment = data.monthlyCommitment;
-    const doneSoFar = data.doneSoFar;
+  const handleSubmit = (values: FormValues) => {
+    const parsed = formSchema.parse(values);
+    const monthlyCommitment = parsed.monthlyCommitment;
+    const doneSoFar = parsed.doneSoFar;
     const balance = monthlyCommitment - doneSoFar;
     
     onSubmit({
-      ...data,
+      type: parsed.type,
+      name: parsed.name,
+      monthlyCommitment,
+      doneSoFar,
       balance,
+      dueDay: parsed.dueDay,
+      isAutomated: parsed.isAutomated,
     });
   };
 

@@ -50,7 +50,16 @@ export class MemStorage implements IStorage {
 
   async createCommitment(insertCommitment: InsertCommitment): Promise<Commitment> {
     const id = randomUUID();
-    const commitment: Commitment = { ...insertCommitment, id };
+    const commitment: Commitment = { 
+      id,
+      type: insertCommitment.type,
+      name: insertCommitment.name,
+      monthlyCommitment: insertCommitment.monthlyCommitment,
+      doneSoFar: insertCommitment.doneSoFar ?? 0,
+      balance: insertCommitment.balance ?? 0,
+      dueDay: insertCommitment.dueDay,
+      isAutomated: insertCommitment.isAutomated ?? false,
+    };
     this.commitments.set(id, commitment);
     return commitment;
   }
@@ -59,7 +68,16 @@ export class MemStorage implements IStorage {
     const existing = this.commitments.get(id);
     if (!existing) return undefined;
     
-    const updated: Commitment = { ...insertCommitment, id };
+    const updated: Commitment = { 
+      id,
+      type: insertCommitment.type,
+      name: insertCommitment.name,
+      monthlyCommitment: insertCommitment.monthlyCommitment,
+      doneSoFar: insertCommitment.doneSoFar ?? 0,
+      balance: insertCommitment.balance ?? 0,
+      dueDay: insertCommitment.dueDay,
+      isAutomated: insertCommitment.isAutomated ?? false,
+    };
     this.commitments.set(id, updated);
     return updated;
   }
