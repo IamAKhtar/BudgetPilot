@@ -22,11 +22,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
 const formSchema = z.object({
-  balance: z.string().min(1, "Required").transform((val) => parseInt(val, 10)),
+  balance: z.union([z.string(), z.number()]).pipe(z.coerce.number().min(1, "Required")),
   reason: z.string().min(1, "Please provide a reason for adjustment"),
 });
-
-type FormValues = z.input<typeof formSchema>;
 
 interface BankBalanceDialogProps {
   open: boolean;
@@ -41,10 +39,10 @@ export function BankBalanceDialog({
   currentBalance,
   onSubmit,
 }: BankBalanceDialogProps) {
-  const form = useForm<FormValues>({
+  const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      balance: currentBalance.toString(),
+      balance: currentBalance,
       reason: "",
     },
   });
@@ -53,15 +51,14 @@ export function BankBalanceDialog({
   useEffect(() => {
     if (open) {
       form.reset({
-        balance: currentBalance.toString(),
+        balance: currentBalance,
         reason: "",
       });
     }
   }, [open, currentBalance, form]);
 
-  const handleSubmit = (values: FormValues) => {
-    const parsed = formSchema.parse(values);
-    onSubmit(parsed.balance, parsed.reason);
+  const handleSubmit = (values: z.infer<typeof formSchema>) => {
+    onSubmit(values.balance, values.reason);
     form.reset();
     onOpenChange(false);
   };

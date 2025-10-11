@@ -4,9 +4,13 @@ import {
   type BankBalance,
   type InsertBankBalance,
   type BankAdjustment,
-  type InsertBankAdjustment
+  type InsertBankAdjustment,
+  commitments,
+  bankBalance as bankBalanceTable,
+  bankAdjustments as bankAdjustmentsTable,
 } from "@shared/schema";
-import { randomUUID } from "crypto";
+import { db } from "./db";
+import { eq, desc } from "drizzle-orm";
 
 export interface IStorage {
   // Commitments
@@ -25,90 +29,109 @@ export interface IStorage {
   getBankAdjustments(): Promise<BankAdjustment[]>;
 }
 
-export class MemStorage implements IStorage {
-  private commitments: Map<string, Commitment>;
-  private bankBalance: BankBalance;
-  private bankAdjustments: Map<string, BankAdjustment>;
-
-  constructor() {
-    this.commitments = new Map();
-    this.bankBalance = {
-      id: randomUUID(),
-      balance: 100000, // Default starting balance
-    };
-    this.bankAdjustments = new Map();
-  }
-
+export class DatabaseStorage implements IStorage {
   // Commitments
   async getCommitments(): Promise<Commitment[]> {
-    return Array.from(this.commitments.values()).sort((a, b) => a.dueDay - b.dueDay);
+    const result = await db
+      .select()
+      .from(commitments)
+      .orderBy(commitments.dueDay);
+    return result;
   }
 
   async getCommitment(id: string): Promise<Commitment | undefined> {
-    return this.commitments.get(id);
+    const [result] = await db
+      .select()
+      .from(commitments)
+      .where(eq(commitments.id, id));
+    return result || undefined;
   }
 
   async createCommitment(insertCommitment: InsertCommitment): Promise<Commitment> {
-    const id = randomUUID();
-    const commitment: Commitment = { 
-      id,
-      type: insertCommitment.type,
-      name: insertCommitment.name,
-      monthlyCommitment: insertCommitment.monthlyCommitment,
-      doneSoFar: insertCommitment.doneSoFar ?? 0,
-      balance: insertCommitment.balance ?? 0,
-      dueDay: insertCommitment.dueDay,
-      isAutomated: insertCommitment.isAutomated ?? false,
-    };
-    this.commitments.set(id, commitment);
-    return commitment;
+    const [result] = await db
+      .insert(commitments)
+      .values({
+        type: insertCommitment.type,
+        name: insertCommitment.name,
+        monthlyCommitment: insertCommitment.monthlyCommitment,
+        doneSoFar: insertCommitment.doneSoFar ?? 0,
+        balance: insertCommitment.balance ?? 0,
+        dueDay: insertCommitment.dueDay,
+        isAutomated: insertCommitment.isAutomated ?? false,
+      })
+      .returning();
+    return result;
   }
 
   async updateCommitment(id: string, insertCommitment: InsertCommitment): Promise<Commitment | undefined> {
-    const existing = this.commitments.get(id);
-    if (!existing) return undefined;
-    
-    const updated: Commitment = { 
-      id,
-      type: insertCommitment.type,
-      name: insertCommitment.name,
-      monthlyCommitment: insertCommitment.monthlyCommitment,
-      doneSoFar: insertCommitment.doneSoFar ?? 0,
-      balance: insertCommitment.balance ?? 0,
-      dueDay: insertCommitment.dueDay,
-      isAutomated: insertCommitment.isAutomated ?? false,
-    };
-    this.commitments.set(id, updated);
-    return updated;
+    const [result] = await db
+      .update(commitments)
+      .set({
+        type: insertCommitment.type,
+        name: insertCommitment.name,
+        monthlyCommitment: insertCommitment.monthlyCommitment,
+        doneSoFar: insertCommitment.doneSoFar ?? 0,
+        balance: insertCommitment.balance ?? 0,
+        dueDay: insertCommitment.dueDay,
+        isAutomated: insertCommitment.isAutomated ?? false,
+      })
+      .where(eq(commitments.id, id))
+      .returning();
+    return result || undefined;
   }
 
   async deleteCommitment(id: string): Promise<boolean> {
-    return this.commitments.delete(id);
+    const result = await db
+      .delete(commitments)
+      .where(eq(commitments.id, id))
+      .returning();
+    return result.length > 0;
   }
 
   // Bank Balance
   async getBankBalance(): Promise<BankBalance> {
-    return this.bankBalance;
+    const [result] = await db.select().from(bankBalanceTable);
+    
+    // If no bank balance exists, create a default one
+    if (!result) {
+      const [newBalance] = await db
+        .insert(bankBalanceTable)
+        .values({ balance: 100000 })
+        .returning();
+      return newBalance;
+    }
+    
+    return result;
   }
 
   async updateBankBalance(balance: InsertBankBalance): Promise<BankBalance> {
-    this.bankBalance.balance = balance.balance;
-    return this.bankBalance;
+    // Get the current balance record
+    const current = await this.getBankBalance();
+    
+    const [result] = await db
+      .update(bankBalanceTable)
+      .set({ balance: balance.balance })
+      .where(eq(bankBalanceTable.id, current.id))
+      .returning();
+    return result;
   }
 
   // Bank Adjustments
   async createBankAdjustment(insertAdjustment: InsertBankAdjustment): Promise<BankAdjustment> {
-    const id = randomUUID();
-    const adjustment: BankAdjustment = { ...insertAdjustment, id };
-    this.bankAdjustments.set(id, adjustment);
-    return adjustment;
+    const [result] = await db
+      .insert(bankAdjustmentsTable)
+      .values(insertAdjustment)
+      .returning();
+    return result;
   }
 
   async getBankAdjustments(): Promise<BankAdjustment[]> {
-    return Array.from(this.bankAdjustments.values()).sort(
-      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-    );
+    const result = await db
+      .select()
+      .from(bankAdjustmentsTable)
+      .orderBy(desc(bankAdjustmentsTable.timestamp));
+    return result;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();

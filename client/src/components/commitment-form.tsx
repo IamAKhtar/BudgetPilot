@@ -22,12 +22,10 @@ import { Switch } from "@/components/ui/switch";
 import { insertCommitmentSchema, type Commitment } from "@shared/schema";
 
 const formSchema = insertCommitmentSchema.extend({
-  monthlyCommitment: z.string().min(1, "Required").transform((val) => parseInt(val, 10)),
-  doneSoFar: z.string().transform((val) => parseInt(val || "0", 10)),
-  dueDay: z.string().min(1, "Required").transform((val) => parseInt(val, 10)),
+  monthlyCommitment: z.union([z.string(), z.number()]).pipe(z.coerce.number().min(1, "Required")),
+  doneSoFar: z.union([z.string(), z.number()]).pipe(z.coerce.number()),
+  dueDay: z.union([z.string(), z.number()]).pipe(z.coerce.number().min(1).max(31)),
 });
-
-type FormValues = z.input<typeof formSchema>;
 
 interface CommitmentFormProps {
   commitment?: Commitment;
@@ -36,33 +34,32 @@ interface CommitmentFormProps {
 }
 
 export function CommitmentForm({ commitment, onSubmit, onCancel }: CommitmentFormProps) {
-  const form = useForm<FormValues>({
+  const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       type: commitment?.type || "Fixed",
       name: commitment?.name || "",
-      monthlyCommitment: commitment?.monthlyCommitment?.toString() || "",
-      doneSoFar: commitment?.doneSoFar?.toString() || "0",
+      monthlyCommitment: commitment?.monthlyCommitment || 0,
+      doneSoFar: commitment?.doneSoFar || 0,
       balance: commitment?.balance || 0,
-      dueDay: commitment?.dueDay?.toString() || "",
+      dueDay: commitment?.dueDay || 0,
       isAutomated: commitment?.isAutomated || false,
     },
   });
 
-  const handleSubmit = (values: FormValues) => {
-    const parsed = formSchema.parse(values);
-    const monthlyCommitment = parsed.monthlyCommitment;
-    const doneSoFar = parsed.doneSoFar;
+  const handleSubmit = (values: z.infer<typeof formSchema>) => {
+    const monthlyCommitment = values.monthlyCommitment;
+    const doneSoFar = values.doneSoFar;
     const balance = monthlyCommitment - doneSoFar;
     
     onSubmit({
-      type: parsed.type,
-      name: parsed.name,
+      type: values.type,
+      name: values.name,
       monthlyCommitment,
       doneSoFar,
       balance,
-      dueDay: parsed.dueDay,
-      isAutomated: parsed.isAutomated,
+      dueDay: values.dueDay,
+      isAutomated: values.isAutomated,
     });
   };
 
