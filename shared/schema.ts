@@ -13,6 +13,8 @@ export const commitments = pgTable("commitments", {
   balance: integer("balance").notNull().default(0),
   dueDay: integer("due_day").notNull(),
   isAutomated: boolean("is_automated").notNull().default(false),
+  month: integer("month").notNull().default(sql`EXTRACT(MONTH FROM CURRENT_DATE)`), // 1-12
+  year: integer("year").notNull().default(sql`EXTRACT(YEAR FROM CURRENT_DATE)`), // e.g., 2025
 });
 
 export const insertCommitmentSchema = createInsertSchema(commitments).omit({
@@ -28,6 +30,8 @@ export const bankAdjustments = pgTable("bank_adjustments", {
   amount: integer("amount").notNull(),
   reason: text("reason").notNull(),
   timestamp: text("timestamp").notNull(),
+  month: integer("month").notNull().default(sql`EXTRACT(MONTH FROM CURRENT_DATE)`), // 1-12
+  year: integer("year").notNull().default(sql`EXTRACT(YEAR FROM CURRENT_DATE)`), // e.g., 2025
 });
 
 export const insertBankAdjustmentSchema = createInsertSchema(bankAdjustments).omit({

@@ -8,7 +8,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all commitments
   app.get("/api/commitments", async (req, res) => {
     try {
-      const commitments = await storage.getCommitments();
+      const month = req.query.month ? parseInt(req.query.month as string) : undefined;
+      const year = req.query.year ? parseInt(req.query.year as string) : undefined;
+      const commitments = await storage.getCommitments(month, year);
       res.json(commitments);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch commitments" });
@@ -85,11 +87,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid data" });
       }
 
+      const now = new Date();
+      const month = now.getMonth() + 1;
+      const year = now.getFullYear();
+
       // Create adjustment record
       await storage.createBankAdjustment({
         amount: balance,
         reason,
-        timestamp: new Date().toISOString(),
+        timestamp: now.toISOString(),
+        month,
+        year,
       });
 
       // Update balance
@@ -103,7 +111,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get bank adjustments history
   app.get("/api/bank-adjustments", async (req, res) => {
     try {
-      const adjustments = await storage.getBankAdjustments();
+      const month = req.query.month ? parseInt(req.query.month as string) : undefined;
+      const year = req.query.year ? parseInt(req.query.year as string) : undefined;
+      const adjustments = await storage.getBankAdjustments(month, year);
       res.json(adjustments);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch adjustments" });

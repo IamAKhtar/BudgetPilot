@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Plus, Wallet, TrendingUp, TrendingDown, Settings } from "lucide-react";
+import { Plus, Wallet, TrendingUp, TrendingDown, Settings, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -30,13 +30,24 @@ import type { Commitment, InsertCommitment } from "@shared/schema";
 
 export default function Dashboard() {
   const { toast } = useToast();
+  
+  // Get current month and year
+  const now = new Date();
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1); // 1-12
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
+  
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isBankDialogOpen, setIsBankDialogOpen] = useState(false);
   const [editingCommitment, setEditingCommitment] = useState<Commitment | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const { data: commitments = [], isLoading: loadingCommitments } = useQuery<Commitment[]>({
-    queryKey: ['/api/commitments'],
+    queryKey: ['/api/commitments', selectedMonth, selectedYear],
+    queryFn: async () => {
+      const res = await fetch(`/api/commitments?month=${selectedMonth}&year=${selectedYear}`);
+      if (!res.ok) throw new Error('Failed to fetch commitments');
+      return res.json();
+    },
   });
 
   const { data: bankBalance = { id: "", balance: 0 } } = useQuery<{ id: string; balance: number }>({
@@ -46,7 +57,7 @@ export default function Dashboard() {
   const createMutation = useMutation({
     mutationFn: (data: InsertCommitment) => apiRequest("POST", "/api/commitments", data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/commitments'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/commitments', selectedMonth, selectedYear] });
       setIsFormOpen(false);
       toast({ title: "Commitment added successfully" });
     },
@@ -56,7 +67,7 @@ export default function Dashboard() {
     mutationFn: ({ id, data }: { id: string; data: InsertCommitment }) =>
       apiRequest("PATCH", `/api/commitments/${id}`, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/commitments'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/commitments', selectedMonth, selectedYear] });
       setIsFormOpen(false);
       setEditingCommitment(null);
       toast({ title: "Commitment updated successfully" });
@@ -66,7 +77,7 @@ export default function Dashboard() {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/commitments/${id}`, {}),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/commitments'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/commitments', selectedMonth, selectedYear] });
       setDeletingId(null);
       toast({ title: "Commitment deleted successfully" });
     },
@@ -119,13 +130,70 @@ export default function Dashboard() {
     setIsFormOpen(true);
   };
 
+  const handlePreviousMonth = () => {
+    if (selectedMonth === 1) {
+      setSelectedMonth(12);
+      setSelectedYear(selectedYear - 1);
+    } else {
+      setSelectedMonth(selectedMonth - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (selectedMonth === 12) {
+      setSelectedMonth(1);
+      setSelectedYear(selectedYear + 1);
+    } else {
+      setSelectedMonth(selectedMonth + 1);
+    }
+  };
+
+  const getMonthName = (month: number) => {
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    return months[month - 1];
+  };
+
+  const isCurrentMonth = selectedMonth === now.getMonth() + 1 && selectedYear === now.getFullYear();
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-card border-b border-card-border">
-        <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
-          <h1 className="text-lg font-semibold">Budget Tracker</h1>
-          <ThemeToggle />
+        <div className="max-w-md mx-auto px-4 py-3 space-y-3">
+          <div className="flex items-center justify-between">
+            <h1 className="text-lg font-semibold">Budget Tracker</h1>
+            <ThemeToggle />
+          </div>
+          
+          {/* Month Navigation */}
+          <div className="flex items-center justify-between gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handlePreviousMonth}
+              data-testid="button-previous-month"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            
+            <div className="flex-1 text-center">
+              <p className="font-semibold text-base" data-testid="text-selected-month">
+                {getMonthName(selectedMonth)} {selectedYear}
+              </p>
+              {!isCurrentMonth && (
+                <p className="text-xs text-muted-foreground">Historical View</p>
+              )}
+            </div>
+            
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleNextMonth}
+              data-testid="button-next-month"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -284,6 +352,8 @@ export default function Dashboard() {
           </DialogHeader>
           <CommitmentForm
             commitment={editingCommitment || undefined}
+            month={selectedMonth}
+            year={selectedYear}
             onSubmit={handleFormSubmit}
             onCancel={() => {
               setIsFormOpen(false);

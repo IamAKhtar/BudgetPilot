@@ -10,11 +10,11 @@ import {
   bankAdjustments as bankAdjustmentsTable,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 
 export interface IStorage {
   // Commitments
-  getCommitments(): Promise<Commitment[]>;
+  getCommitments(month?: number, year?: number): Promise<Commitment[]>;
   getCommitment(id: string): Promise<Commitment | undefined>;
   createCommitment(commitment: InsertCommitment): Promise<Commitment>;
   updateCommitment(id: string, commitment: InsertCommitment): Promise<Commitment | undefined>;
@@ -26,15 +26,28 @@ export interface IStorage {
   
   // Bank Adjustments
   createBankAdjustment(adjustment: InsertBankAdjustment): Promise<BankAdjustment>;
-  getBankAdjustments(): Promise<BankAdjustment[]>;
+  getBankAdjustments(month?: number, year?: number): Promise<BankAdjustment[]>;
 }
 
 export class DatabaseStorage implements IStorage {
   // Commitments
-  async getCommitments(): Promise<Commitment[]> {
-    const result = await db
-      .select()
-      .from(commitments)
+  async getCommitments(month?: number, year?: number): Promise<Commitment[]> {
+    const query = db.select().from(commitments);
+    
+    if (month !== undefined && year !== undefined) {
+      const result = await query
+        .where(and(eq(commitments.month, month), eq(commitments.year, year)))
+        .orderBy(commitments.dueDay);
+      return result;
+    }
+    
+    // If no month/year specified, return current month's commitments
+    const now = new Date();
+    const currentMonth = now.getMonth() + 1;
+    const currentYear = now.getFullYear();
+    
+    const result = await query
+      .where(and(eq(commitments.month, currentMonth), eq(commitments.year, currentYear)))
       .orderBy(commitments.dueDay);
     return result;
   }
@@ -58,6 +71,8 @@ export class DatabaseStorage implements IStorage {
         balance: insertCommitment.balance ?? 0,
         dueDay: insertCommitment.dueDay,
         isAutomated: insertCommitment.isAutomated ?? false,
+        month: insertCommitment.month,
+        year: insertCommitment.year,
       })
       .returning();
     return result;
@@ -74,6 +89,8 @@ export class DatabaseStorage implements IStorage {
         balance: insertCommitment.balance ?? 0,
         dueDay: insertCommitment.dueDay,
         isAutomated: insertCommitment.isAutomated ?? false,
+        month: insertCommitment.month,
+        year: insertCommitment.year,
       })
       .where(eq(commitments.id, id))
       .returning();
@@ -125,11 +142,17 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async getBankAdjustments(): Promise<BankAdjustment[]> {
-    const result = await db
-      .select()
-      .from(bankAdjustmentsTable)
-      .orderBy(desc(bankAdjustmentsTable.timestamp));
+  async getBankAdjustments(month?: number, year?: number): Promise<BankAdjustment[]> {
+    const query = db.select().from(bankAdjustmentsTable);
+    
+    if (month !== undefined && year !== undefined) {
+      const result = await query
+        .where(and(eq(bankAdjustmentsTable.month, month), eq(bankAdjustmentsTable.year, year)))
+        .orderBy(desc(bankAdjustmentsTable.timestamp));
+      return result;
+    }
+    
+    const result = await query.orderBy(desc(bankAdjustmentsTable.timestamp));
     return result;
   }
 }

@@ -29,11 +29,13 @@ const formSchema = insertCommitmentSchema.extend({
 
 interface CommitmentFormProps {
   commitment?: Commitment;
+  month: number; // 1-12
+  year: number; // e.g., 2025
   onSubmit: (data: z.infer<typeof insertCommitmentSchema>) => void;
   onCancel: () => void;
 }
 
-export function CommitmentForm({ commitment, onSubmit, onCancel }: CommitmentFormProps) {
+export function CommitmentForm({ commitment, month, year, onSubmit, onCancel }: CommitmentFormProps) {
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -60,6 +62,8 @@ export function CommitmentForm({ commitment, onSubmit, onCancel }: CommitmentFor
       balance,
       dueDay: values.dueDay,
       isAutomated: values.isAutomated,
+      month,
+      year,
     });
   };
 

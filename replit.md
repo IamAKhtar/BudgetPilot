@@ -27,14 +27,22 @@ Help users manage their monthly budget by:
 - Implemented CRUD operations for all entities
 - Added theme toggle and responsive design
 - Fixed bank balance dialog to properly sync with latest balance (preventing stale value bug)
-- Comprehensive E2E testing completed successfully
+- Successfully migrated from in-memory storage to PostgreSQL database for data persistence
+- Fixed form validation to properly handle number inputs with z.coerce
+- **Added Monthly History Tracking**:
+  - Month/year fields added to commitments and bank adjustments
+  - Month navigation controls (Previous/Next buttons) in header
+  - Ability to view and manage commitments for any month/year
+  - Historical view indicator when viewing past months
+  - Commitments correctly assigned to selected month/year
+- Comprehensive E2E testing completed successfully for all features
 
 ## Project Architecture
 
 ### Tech Stack
 - **Frontend**: React 18, Vite, TailwindCSS, Shadcn UI
 - **Backend**: Express.js, TypeScript
-- **Storage**: In-memory (MemStorage) - data persists during session
+- **Database**: PostgreSQL (Neon) with Drizzle ORM - data persists permanently
 - **State Management**: TanStack Query (React Query v5)
 - **Forms**: React Hook Form with Zod validation
 - **Routing**: Wouter
@@ -75,6 +83,8 @@ Help users manage their monthly budget by:
 - `balance`: Remaining amount (calculated: monthlyCommitment - doneSoFar)
 - `dueDay`: Day of month (1-31)
 - `isAutomated`: Boolean for auto-payment status
+- `month`: Month (1-12) - for historical tracking
+- `year`: Year (e.g., 2025) - for historical tracking
 
 **Bank Balance**
 - `id`: Unique identifier
@@ -85,21 +95,23 @@ Help users manage their monthly budget by:
 - `amount`: New balance amount
 - `reason`: Explanation for adjustment
 - `timestamp`: ISO date string
+- `month`: Month (1-12) - for historical tracking
+- `year`: Year (e.g., 2025) - for historical tracking
 
 ### API Endpoints
 
 **Commitments**
-- `GET /api/commitments` - List all commitments (sorted by due day)
-- `POST /api/commitments` - Create new commitment
+- `GET /api/commitments?month=X&year=Y` - List commitments for specific month (sorted by due day)
+- `POST /api/commitments` - Create new commitment (month/year assigned from request)
 - `PATCH /api/commitments/:id` - Update commitment
 - `DELETE /api/commitments/:id` - Delete commitment
 
 **Bank Balance**
 - `GET /api/bank-balance` - Get current balance
-- `POST /api/bank-balance/adjust` - Update balance with reason
+- `POST /api/bank-balance/adjust` - Update balance with reason (auto-assigns current month/year)
 
 **Bank Adjustments**
-- `GET /api/bank-adjustments` - Get adjustment history
+- `GET /api/bank-adjustments?month=X&year=Y` - Get adjustment history (optionally filtered by month/year)
 
 ### Key Features
 
@@ -108,20 +120,30 @@ Help users manage their monthly budget by:
    - Surplus/Shortfall calculation (green for surplus, red for shortfall)
    - Monthly summary statistics (total monthly, paid, balance, count)
    - List of all commitments with visual indicators
+   - Month/year navigation with Previous/Next controls
+   - Historical view indicator for past/future months
 
-2. **Commitment Management**
+2. **Monthly History Tracking**
+   - Navigate to any month/year to view historical data
+   - Create commitments for specific months
+   - View past month budgets and spending patterns
+   - Separate data for each month with automatic filtering
+
+3. **Commitment Management**
    - Add new commitments with full details
    - Edit existing commitments
    - Delete with confirmation dialog
    - Visual indicators: type badge, auto-payment badge, paid status
    - Color-coded balances (green for paid, red for pending)
+   - Automatically assigned to selected month/year
 
-3. **Bank Balance Tracking**
+4. **Bank Balance Tracking**
    - Adjustable balance with reason notes
    - Form properly resets to show current balance on open
    - Adjustment history stored for accountability
+   - Adjustments track month/year for historical reference
 
-4. **Calculations**
+5. **Calculations**
    - Balance per commitment: `monthlyCommitment - doneSoFar`
    - Total pending: Sum of all commitment balances
    - Surplus/Shortfall: `bankBalance - totalPendingBalance`
