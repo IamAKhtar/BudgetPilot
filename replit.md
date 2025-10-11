@@ -43,6 +43,11 @@ Help users manage their monthly budget by:
     - Future months: Not yet paid (counted in balance)
   - Accurate totals calculation considering auto-payment status
   - Form shows helpful message explaining auto-payment behavior
+- **Auto-Populate Commitments**:
+  - When navigating to an empty month, option to copy from previous month
+  - All commitment details preserved (name, type, amount, due day, auto-payment)
+  - "Done So Far" automatically reset to 0 (everything due)
+  - Saves time - no need to recreate commitments every month
 - Comprehensive E2E testing completed successfully for all features
 
 ## Project Architecture
@@ -111,6 +116,7 @@ Help users manage their monthly budget by:
 **Commitments**
 - `GET /api/commitments?month=X&year=Y` - List commitments for specific month (sorted by due day)
 - `POST /api/commitments` - Create new commitment (month/year assigned from request)
+- `POST /api/commitments/copy-from-previous` - Copy commitments from previous month with doneSoFar=0
 - `PATCH /api/commitments/:id` - Update commitment
 - `DELETE /api/commitments/:id` - Delete commitment
 
