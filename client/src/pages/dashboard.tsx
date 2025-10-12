@@ -353,16 +353,24 @@ export default function Dashboard() {
 
         {/* Commitments List */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="space-y-3">
             <h2 className="text-lg font-semibold">My Commitments</h2>
             
             {commitments.length > 0 && (
-              <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(value as typeof statusFilter)}>
-                <TabsList data-testid="tabs-status-filter">
-                  <TabsTrigger value="all" data-testid="tab-all">All</TabsTrigger>
-                  <TabsTrigger value="unpaid" data-testid="tab-unpaid">Unpaid</TabsTrigger>
-                  <TabsTrigger value="part-paid" data-testid="tab-part-paid">Part-paid</TabsTrigger>
-                  <TabsTrigger value="done" data-testid="tab-done">Done</TabsTrigger>
+              <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(value as typeof statusFilter)} className="w-full">
+                <TabsList data-testid="tabs-status-filter" className="w-full grid grid-cols-4">
+                  <TabsTrigger value="all" data-testid="tab-all" className="data-[state=active]:text-primary">
+                    All <span className="ml-1 text-muted-foreground">({filterCounts.all})</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="unpaid" data-testid="tab-unpaid" className="data-[state=active]:text-primary">
+                    Unpaid <span className="ml-1 text-muted-foreground">({filterCounts.unpaid})</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="part-paid" data-testid="tab-part-paid" className="data-[state=active]:text-primary">
+                    Part-paid <span className="ml-1 text-muted-foreground">({filterCounts.partPaid})</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="done" data-testid="tab-done" className="data-[state=active]:text-primary">
+                    Done <span className="ml-1 text-muted-foreground">({filterCounts.done})</span>
+                  </TabsTrigger>
                 </TabsList>
               </Tabs>
             )}
