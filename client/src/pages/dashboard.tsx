@@ -142,19 +142,21 @@ export default function Dashboard() {
     return balanceB - balanceA;
   });
 
+  // Calculate counts for each filter in a single pass
+  const filterCounts = sortedCommitments.reduce((counts, commitment) => {
+    const status = getPaymentStatus(commitment);
+    counts.all++;
+    if (status === "unpaid") counts.unpaid++;
+    if (status === "part-paid") counts.partPaid++;
+    if (status === "done") counts.done++;
+    return counts;
+  }, { all: 0, unpaid: 0, partPaid: 0, done: 0 });
+
   // Filter commitments by status
   const filteredCommitments = sortedCommitments.filter(commitment => {
     if (statusFilter === "all") return true;
     return getPaymentStatus(commitment) === statusFilter;
   });
-
-  // Calculate counts for each filter
-  const filterCounts = {
-    all: sortedCommitments.length,
-    unpaid: sortedCommitments.filter(c => getPaymentStatus(c) === "unpaid").length,
-    partPaid: sortedCommitments.filter(c => getPaymentStatus(c) === "part-paid").length,
-    done: sortedCommitments.filter(c => getPaymentStatus(c) === "done").length,
-  };
 
   const handleFormSubmit = (data: InsertCommitment) => {
     if (editingCommitment) {
@@ -359,17 +361,33 @@ export default function Dashboard() {
             {commitments.length > 0 && (
               <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(value as typeof statusFilter)} className="w-full">
                 <TabsList data-testid="tabs-status-filter" className="w-full grid grid-cols-4">
-                  <TabsTrigger value="all" data-testid="tab-all" className="data-[state=active]:text-primary">
-                    All <span className="ml-1 text-muted-foreground">({filterCounts.all})</span>
+                  <TabsTrigger 
+                    value="all" 
+                    data-testid="tab-all" 
+                    className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary"
+                  >
+                    All <span className="ml-1 opacity-70">({filterCounts.all})</span>
                   </TabsTrigger>
-                  <TabsTrigger value="unpaid" data-testid="tab-unpaid" className="data-[state=active]:text-primary">
-                    Unpaid <span className="ml-1 text-muted-foreground">({filterCounts.unpaid})</span>
+                  <TabsTrigger 
+                    value="unpaid" 
+                    data-testid="tab-unpaid" 
+                    className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary"
+                  >
+                    Unpaid <span className="ml-1 opacity-70">({filterCounts.unpaid})</span>
                   </TabsTrigger>
-                  <TabsTrigger value="part-paid" data-testid="tab-part-paid" className="data-[state=active]:text-primary">
-                    Part-paid <span className="ml-1 text-muted-foreground">({filterCounts.partPaid})</span>
+                  <TabsTrigger 
+                    value="part-paid" 
+                    data-testid="tab-part-paid" 
+                    className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary"
+                  >
+                    Part-paid <span className="ml-1 opacity-70">({filterCounts.partPaid})</span>
                   </TabsTrigger>
-                  <TabsTrigger value="done" data-testid="tab-done" className="data-[state=active]:text-primary">
-                    Done <span className="ml-1 text-muted-foreground">({filterCounts.done})</span>
+                  <TabsTrigger 
+                    value="done" 
+                    data-testid="tab-done" 
+                    className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary"
+                  >
+                    Done <span className="ml-1 opacity-70">({filterCounts.done})</span>
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
