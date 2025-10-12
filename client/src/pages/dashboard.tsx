@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Plus, Wallet, TrendingUp, TrendingDown, Settings, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -41,6 +42,7 @@ export default function Dashboard() {
   const [isBankDialogOpen, setIsBankDialogOpen] = useState(false);
   const [editingCommitment, setEditingCommitment] = useState<Commitment | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<"all" | "unpaid" | "part-paid" | "done">("all");
 
   const { data: commitments = [], isLoading: loadingCommitments } = useQuery<Commitment[]>({
     queryKey: ['/api/commitments', selectedMonth, selectedYear],
@@ -115,6 +117,36 @@ export default function Dashboard() {
   const totalBalance = totalMonthly - totalPaid;
   const surplusShortfall = bankBalance.balance - totalBalance;
   const isSurplus = surplusShortfall >= 0;
+
+  // Helper function to get payment status
+  const getPaymentStatus = (commitment: Commitment): "unpaid" | "part-paid" | "done" => {
+    const effectiveDoneSoFar = getEffectiveDoneSoFar(commitment, selectedMonth, selectedYear);
+    if (effectiveDoneSoFar === 0) return "unpaid";
+    if (effectiveDoneSoFar < commitment.monthlyCommitment) return "part-paid";
+    return "done";
+  };
+
+  // Sort commitments: by due date ascending, then by unpaid amount descending
+  const sortedCommitments = [...commitments].sort((a, b) => {
+    // First, sort by due day ascending
+    if (a.dueDay !== b.dueDay) {
+      return a.dueDay - b.dueDay;
+    }
+    // Then, sort by balance (unpaid amount) descending
+    const balanceA = getEffectiveDoneSoFar(a, selectedMonth, selectedYear) < a.monthlyCommitment 
+      ? a.monthlyCommitment - getEffectiveDoneSoFar(a, selectedMonth, selectedYear) 
+      : 0;
+    const balanceB = getEffectiveDoneSoFar(b, selectedMonth, selectedYear) < b.monthlyCommitment 
+      ? b.monthlyCommitment - getEffectiveDoneSoFar(b, selectedMonth, selectedYear) 
+      : 0;
+    return balanceB - balanceA;
+  });
+
+  // Filter commitments by status
+  const filteredCommitments = sortedCommitments.filter(commitment => {
+    if (statusFilter === "all") return true;
+    return getPaymentStatus(commitment) === statusFilter;
+  });
 
   const handleFormSubmit = (data: InsertCommitment) => {
     if (editingCommitment) {
@@ -283,25 +315,25 @@ export default function Dashboard() {
             <CardContent className="pt-6">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-xs text-muted-foreground mb-1">Total Monthly</p>
+                  <p className="text-xs text-muted-foreground mb-1">Total Required</p>
                   <p className="text-lg font-semibold font-mono" data-testid="text-total-monthly">
                     ₹{totalMonthly.toLocaleString()}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground mb-1">Total Paid</p>
+                  <p className="text-xs text-muted-foreground mb-1">Paid so far</p>
                   <p className="text-lg font-semibold font-mono text-success" data-testid="text-total-paid">
                     ₹{totalPaid.toLocaleString()}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground mb-1">Total Balance</p>
+                  <p className="text-xs text-muted-foreground mb-1">Still to Pay</p>
                   <p className="text-lg font-semibold font-mono text-destructive" data-testid="text-total-balance">
                     ₹{totalBalance.toLocaleString()}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground mb-1">Commitments</p>
+                  <p className="text-xs text-muted-foreground mb-1"># Commitments</p>
                   <p className="text-lg font-semibold" data-testid="text-commitment-count">
                     {commitments.length}
                   </p>
@@ -313,7 +345,20 @@ export default function Dashboard() {
 
         {/* Commitments List */}
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold">Monthly Commitments</h2>
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <h2 className="text-lg font-semibold">My Commitments</h2>
+            
+            {commitments.length > 0 && (
+              <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(value as typeof statusFilter)}>
+                <TabsList data-testid="tabs-status-filter">
+                  <TabsTrigger value="all" data-testid="tab-all">All</TabsTrigger>
+                  <TabsTrigger value="unpaid" data-testid="tab-unpaid">Unpaid</TabsTrigger>
+                  <TabsTrigger value="part-paid" data-testid="tab-part-paid">Part-paid</TabsTrigger>
+                  <TabsTrigger value="done" data-testid="tab-done">Done</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            )}
+          </div>
           
           {loadingCommitments ? (
             <div className="space-y-3">
@@ -354,9 +399,15 @@ export default function Dashboard() {
                 </div>
               </div>
             </Card>
+          ) : filteredCommitments.length === 0 ? (
+            <Card className="p-8">
+              <p className="text-center text-muted-foreground">
+                No {statusFilter === "all" ? "" : statusFilter} commitments found
+              </p>
+            </Card>
           ) : (
             <div className="space-y-3">
-              {commitments.map((commitment) => (
+              {filteredCommitments.map((commitment) => (
                 <CommitmentCard
                   key={commitment.id}
                   commitment={commitment}
