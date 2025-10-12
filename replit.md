@@ -53,6 +53,7 @@ Help users manage their monthly budget by:
   - Filter tabs: Show All | Unpaid | Part-paid | Done
   - Quick status-based filtering to reduce list noise
   - UI labels updated: "My Commitments", "Total Required", "Paid so far", "Still to Pay", "# Commitments"
+  - Enhanced tab UI: Full-width grid layout, counts with each filter (e.g., "All (5)"), prominent blue highlight for selected tab
 - Comprehensive E2E testing completed successfully for all features
 
 ## Project Architecture
