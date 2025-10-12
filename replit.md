@@ -48,6 +48,11 @@ Help users manage their monthly budget by:
   - All commitment details preserved (name, type, amount, due day, auto-payment)
   - "Done So Far" automatically reset to 0 (everything due)
   - Saves time - no need to recreate commitments every month
+- **Smart Sorting & Filtering** (October 12, 2025):
+  - Default sort: By due date ascending, then by unpaid balance descending
+  - Filter tabs: Show All | Unpaid | Part-paid | Done
+  - Quick status-based filtering to reduce list noise
+  - UI labels updated: "My Commitments", "Total Required", "Paid so far", "Still to Pay", "# Commitments"
 - Comprehensive E2E testing completed successfully for all features
 
 ## Project Architecture
