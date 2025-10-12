@@ -148,6 +148,14 @@ export default function Dashboard() {
     return getPaymentStatus(commitment) === statusFilter;
   });
 
+  // Calculate counts for each filter
+  const filterCounts = {
+    all: sortedCommitments.length,
+    unpaid: sortedCommitments.filter(c => getPaymentStatus(c) === "unpaid").length,
+    partPaid: sortedCommitments.filter(c => getPaymentStatus(c) === "part-paid").length,
+    done: sortedCommitments.filter(c => getPaymentStatus(c) === "done").length,
+  };
+
   const handleFormSubmit = (data: InsertCommitment) => {
     if (editingCommitment) {
       updateMutation.mutate({ id: editingCommitment.id, data });
