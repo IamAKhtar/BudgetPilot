@@ -1,0 +1,15 @@
+node_modules
+.git
+.env
+.env.local
+.env.*.local
+*.log
+.DS_Store
+attached_assets/
+design_guidelines.md
+replit.md
+.replit
+.local
+.upm
+.cache
+.config
